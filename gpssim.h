@@ -75,8 +75,9 @@
 
 // Sampling data format
 #define SC01 (1)
-#define SC08 (8)
-#define SC16 (16)
+#define SC02 (2) // 2 bits
+#define SC08 (8) // 8 bits
+#define SC16 (16) // 16 bits
 
 #define EPHEM_ARRAY_SIZE (15) // for daily GPS broadcast ephemers file (brdc)
 

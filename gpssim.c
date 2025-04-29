@@ -1719,10 +1719,10 @@ void usage(void)
 		"  -d <duration>    Duration [sec] (dynamic mode max: %.0f, static mode max: %d)\n"
 		"  -o <output>      I/Q sampling data file (default: gpssim.bin)\n"
 		"  -s <frequency>   Sampling frequency [Hz] (default: 2600000)\n"
-		"  -b <iq_bits>     I/Q data format [1/8/16] (default: 16)\n"
+		"  -b <iq_bits>     I/Q data format [1/2/8/16] (default: 16)\n"
 		"  -i               Disable ionospheric delay for spacecraft scenario\n"
 		"  -p [fixed_gain]  Disable path loss and hold power level constant\n"
-		"  -v               Show details about simulated channels\n",
+		"  -v               Show details about simulated channels\n", // Need ot find a way to make the satellite visible or something
 		((double)USER_MOTION_SIZE) / 10.0, STATIC_MAX_DURATION);
 
 	return;
@@ -1864,7 +1864,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'b':
 			data_format = atoi(optarg);
-			if (data_format!=SC01 && data_format!=SC08 && data_format!=SC16)
+			if (data_format!=SC01 && data_format!=SC08 && data_format!=SC02 && data_format!=SC16)
 			{
 				fprintf(stderr, "ERROR: Invalid I/Q data format.\n");
 				exit(1);
@@ -2199,6 +2199,14 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 	}
+	else if (data_format == SC02) {
+		iq8_buff = calloc(iq_buff_size/2, 1);
+		if (iq8_buff==NULL)
+		{
+			fprintf(stderr, "ERROR: Failed to allocate 8-bit I/Q buffer.\n");
+			exit(1);
+		
+	}
 	else if (data_format==SC01)
 	{
 		iq8_buff = calloc(iq_buff_size/4, 1); // byte = {I0, Q0, I1, Q1, I2, Q2, I3, Q3}
@@ -2388,8 +2396,17 @@ int main(int argc, char *argv[])
 			}
 
 			fwrite(iq8_buff, 1, iq_buff_size/4, fp);
-		}
-		else if (data_format==SC08)
+		} else if (data_format == SC02) {
+			for (isamp=0; isamp<2*iq_buff_size; isamp++)
+			{
+				if (isamp%4==0)
+					iq8_buff[isamp/4] = 0x00;
+				
+				iq8_buff[isamp/4] |= (iq_buff[isamp] >> 6)<<(3-isamp%4);
+			}
+
+			fwrite(iq8_buff, 1, iq_buff_size/2, fp);
+		} else if (data_format==SC08)
 		{
 			for (isamp=0; isamp<2*iq_buff_size; isamp++)
 			{
